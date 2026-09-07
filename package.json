@@ -1,0 +1,30 @@
+{
+  "name": "agentassist",
+  "version": "1.0.0",
+  "description": "AI Gateway for agent assist",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "prod": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cython1/AgentAssist.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cython1/AgentAssist/issues"
+  },
+  "homepage": "https://github.com/cython1/AgentAssist#readme",
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "type": "module"
+}
