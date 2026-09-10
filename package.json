@@ -8,7 +8,12 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "build": "tsc",
-    "prod": "node dist/index.js"
+    "prod": "node dist/index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:verify": "eslint . --max-warnings 0",
+    "prettier": "prettier --write .",
+    "prettier:verify": "prettier --check ."
   },
   "repository": {
     "type": "git",
@@ -22,9 +27,14 @@
   },
   "homepage": "https://github.com/cython1/AgentAssist#readme",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.5.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0"
   },
   "type": "module"
 }

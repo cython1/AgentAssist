@@ -7,14 +7,14 @@ export function parseRtpPacket(packet) {
     const sequenceNumber = packet.readUInt16BE(2);
     const timestamp = packet.readUInt32BE(4);
     const ssrc = packet.readUInt32BE(8);
-    ``;
+    const payload = packet.subarray(12);
     return {
         version,
         payloadType,
         sequenceNumber,
         timestamp,
         ssrc,
-        payload: packet.subarray(12),
+        payload,
     };
 }
 //# sourceMappingURL=rtp.js.map
