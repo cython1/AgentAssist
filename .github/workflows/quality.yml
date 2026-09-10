@@ -8,6 +8,22 @@ permissions:
   contents: read
 
 jobs:
+  branch-policy:
+    name: Validate branch policy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require develop as the integration branch
+        env:
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ "$BASE_BRANCH" = "main" ] && [ "$HEAD_BRANCH" != "develop" ]; then
+            echo "Only develop may be merged directly into main. Open this pull request against develop instead."
+            exit 1
+          fi
+
   quality:
     name: Lint, Prettier, and Build
     runs-on: ubuntu-latest
