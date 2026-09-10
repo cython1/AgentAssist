@@ -16,7 +16,9 @@ export function parseRtpPacket(packet: Buffer): RtpPacket {
   const payloadType = packet[1] & 0x7f;
   const sequenceNumber = packet.readUInt16BE(2);
   const timestamp = packet.readUInt32BE(4);
-  const ssrc = packet.readUInt32BE(8);``
+  const ssrc = packet.readUInt32BE(8);
+
+  const payload = packet.subarray(12);
 
   return {
     version,
@@ -24,6 +26,6 @@ export function parseRtpPacket(packet: Buffer): RtpPacket {
     sequenceNumber,
     timestamp,
     ssrc,
-    payload: packet.subarray(12),
+    payload,
   };
 }
