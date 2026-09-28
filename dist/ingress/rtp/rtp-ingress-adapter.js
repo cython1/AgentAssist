@@ -1,7 +1,14 @@
 import dgram from "node:dgram";
-import { parseRtpPacket } from "../ingress/rtp/rtp.js";
-import { muLawToLinear } from "./codecs/pcmu.js";
-import { writeWavFile } from "./way-writer.js";
+import { writeFileSync } from "node:fs";
+import { parseRtpPacket } from "./rtp.js";
+function muLawToLinear(byte) {
+    const value = (~byte) & 0xff;
+    const sign = value & 0x80;
+    const exponent = (value >> 4) & 0x07;
+    const mantissa = value & 0x0f;
+    const sample = ((mantissa << 3) + 0x84) << exponent;
+    return sign ? 0x84 - sample : sample - 0x84;
+}
 const RTP_PORT = 20000;
 // Store all decoded PCM samples
 const allPcmSamples = [];
@@ -11,6 +18,28 @@ let packetCount = 0;
 let wavWritten = false;
 // Used for sequence tracking
 let lastSequenceNumber;
+function writeWavFile(filePath, samples, sampleRate) {
+    const dataSize = samples.length * 2;
+    const header = Buffer.alloc(44);
+    header.write("RIFF", 0);
+    header.writeUInt32LE(36 + dataSize, 4);
+    header.write("WAVE", 8);
+    header.write("fmt ", 12);
+    header.writeUInt32LE(16, 16);
+    header.writeUInt16LE(1, 20);
+    header.writeUInt16LE(1, 22);
+    header.writeUInt32LE(sampleRate, 24);
+    header.writeUInt32LE(sampleRate * 2, 28);
+    header.writeUInt16LE(2, 32);
+    header.writeUInt16LE(16, 34);
+    header.write("data", 36);
+    header.writeUInt32LE(dataSize, 40);
+    const data = Buffer.alloc(dataSize);
+    samples.forEach((sample, index) => {
+        data.writeInt16LE(sample, index * 2);
+    });
+    writeFileSync(filePath, Buffer.concat([header, data]));
+}
 export function startRtpServer() {
     const socket = dgram.createSocket("udp4");
     socket.on("listening", () => {
@@ -66,4 +95,4 @@ export function startRtpServer() {
     });
     socket.bind(RTP_PORT);
 }
-//# sourceMappingURL=udp-server.js.map
+//# sourceMappingURL=rtp-ingress-adapter.js.map

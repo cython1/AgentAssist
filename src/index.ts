@@ -1,4 +1,4 @@
-import { startRtpServer } from "./media/udp-server.js";
+import { startRtpServer } from "./ingress/rtp/rtp-ingress-adapter.js";
 
 console.log("AI Voice Gateway starting...");
 
