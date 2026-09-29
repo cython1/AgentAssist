@@ -1,6 +1,11 @@
 import dgram from "node:dgram";
 import { writeFileSync } from "node:fs";
 import { parseRtpPacket } from "./rtp.js";
+import type {
+  voiceIngressAdapter,
+  audioFrameHandler,
+} from "../voice-ingress-adapter.js";
+import type { Socket } from "node:dgram";
 
 function muLawToLinear(byte: number): number {
   const value = ~byte & 0xff;
@@ -130,4 +135,25 @@ export function startRtpServer(): void {
   });
 
   socket.bind(RTP_PORT);
+}
+export class rtpIngressAdapter implements voiceIngressAdapter {
+  private readonly handlers = new Set<audioFrameHandler>();
+  private socket: Socket | undefined = undefined;
+  onAudio(handler: audioFrameHandler): () => void {
+    this.handlers.add(handler);
+    return () => {
+      this.handlers.delete(handler);
+    };
+  }
+  async start(): Promise<void> {
+    if (this.socket !== undefined) {
+      throw new Error("RTP adapter is already started or starting");
+    }
+
+    throw new Error("start() is not implemented yet");
+  }
+
+  async stop(): Promise<void> {
+    throw new Error("stop() is not implemented yet");
+  }
 }
