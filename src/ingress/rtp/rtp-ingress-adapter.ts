@@ -149,8 +149,23 @@ export class rtpIngressAdapter implements voiceIngressAdapter {
     if (this.socket !== undefined) {
       throw new Error("RTP adapter is already started or starting");
     }
-
-    throw new Error("start() is not implemented yet");
+    const socket = dgram.createSocket("udp4");
+    this.socket = socket;
+    await new Promise<void>((resolve, reject) => {
+      const onListening = (): void => {
+        const address = socket.address();
+        console.log(
+          `RTP server listening on ${address.address}:${address.port}`,
+        );
+        resolve();
+      };
+      socket.once("listening", onListening);
+      socket.once("error", (error) => {
+        console.error("UDP server error:", error);
+        reject(error);
+      });
+      socket.bind(RTP_PORT);
+    });
   }
 
   async stop(): Promise<void> {
