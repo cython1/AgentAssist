@@ -17,4 +17,4 @@ Responsibilities:
 - Run the repository's real validation commands.
 - Report exactly what changed, what was tested, and any remaining risks.
 - Do not merge pull requests.
-- Do not make architectural decisions without documenting the decision and asking for clarification.git c
+- Do not make architectural decisions without documenting the decision and asking for clarification.
