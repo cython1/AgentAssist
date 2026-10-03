@@ -1,53 +1,36 @@
-# Repository Instructions
+# AgentAssist repository instructions
 
-## Project Overview
+This is a TypeScript Node.js real-time voice gateway.
 
-AgentAssist is a TypeScript/Node.js agent assist gateway. The current entrypoint is `src/index.ts`; it starts the RTP UDP receiver. The active media path parses RTP packets, accepts PCMU (payload type 0), decodes audio, and writes a WAV recording.
+## Architecture
 
-Treat this repository as an evolving prototype. Do not assume that every directory or planned integration is implemented; verify the current code before extending it.
+- The gateway owns only the media interface exposed by a CCaaS or SBC.
+- Do not implement the provider's internal WebRTC, ICE, STUN, TURN, or DTLS stack unless that protocol is explicitly exposed to this gateway.
+- Reuse adapters by media contract, not automatically by vendor.
+- Ingress handles transport and packet parsing.
+- Media normalization handles codec decoding, resampling, and canonical audio.
+- WAV writing is a diagnostic/test concern.
+- Keep AI and interaction-session logic independent of provider transports.
 
-## Structure
+## Naming
 
-- `src/index.ts`: application entrypoint.
-- `src/ingress/`: ingress contracts and audio-frame types.
-- `src/ingress/rtp/`: RTP parsing and RTP ingress adapter.
-- `src/media/`: UDP receiver, PCMU codec, and WAV writing.
-- `src/ai/`, `src/cti/`, `src/events/`, `src/session/`, `src/sip/`, `src/state/`, and `src/telemetry/`: domain areas; inspect their contents before assuming they have working implementations.
-- `test/`: manual RTP sender and test assets; the package does not currently define a unit-test suite.
+- Use camelCase for methods and interfaces, following the existing codebase convention.
+- Preserve existing filenames and import conventions unless the task explicitly changes them.
 
-Keep packet parsing, ingress contracts, codec conversion, and file output in their existing areas. Prefer extending the existing interfaces and utilities over duplicating media or protocol logic.
+## Current RTP baseline
 
-## TypeScript And Module Conventions
+- Receiver startup: `npm run dev`
+- RTP test sender: `npx tsx test/udp-sender.ts`
+- Receiver port: UDP `20000`
+- Current codec: PCMU, 8 kHz, mono
+- Current diagnostic output: root-level `received-audio.wav`
+- `npm run test:rtp` does not currently exist.
 
-- Use TypeScript and keep the compiler's `strict` checks passing.
-- The project uses ESM with `NodeNext`. Relative TypeScript imports in source should use `.js` extensions, matching the existing code and emitted Node.js modules.
-- Prefer Node.js built-in modules with the `node:` prefix.
-- Preserve the existing formatting and ESLint conventions. `console` logging is currently permitted.
-- Keep public interfaces small and make resource lifecycle behavior explicit, especially for sockets and event handlers.
+## Agent behavior
 
-## Voice And RTP Behavior
-
-- The current receiver binds an IPv4 UDP socket on port `20000`.
-- The current media path supports RTP PCMU payload type `0`; do not treat other payload types as PCMU.
-- Decoded WAV output is mono, 16-bit PCM at 8 kHz in the current receiver.
-- Keep RTP header parsing and payload decoding separate. Validate packet boundaries and malformed input before reading fields or decoding samples.
-- Be mindful of RTP sequence-number wraparound and packet loss when changing packet tracking.
-- Do not silently change ports, codecs, sample rates, recording paths, or packet handling semantics without updating the relevant code and documentation.
-
-## Local Commands
-
-- `npm run dev`: run the entrypoint with watch mode.
-- `npm start`: run the entrypoint.
-- `npm run build`: compile TypeScript into `dist/`.
-- `npm run lint:verify`: run ESLint with warnings treated as errors.
-- `npm run prettier:verify`: check formatting.
-- `npm run test:rtp`: run the UDP sender used for manual RTP testing; this is not a unit-test suite.
-
-`npm test` is currently a placeholder that exits with an error. Do not report it as a passing or configured test suite. For code changes, run the build and relevant lint/format checks; use the manual RTP sender only when the receiver behavior needs end-to-end verification.
-
-## Change Guidance
-
-- Make focused changes that preserve existing module boundaries and runtime behavior unless the task calls for changing them.
-- When changing RTP or audio processing, check the parser, codec, receiver, and WAV writer together as needed; update or add focused tests when a suitable test harness exists.
-- Avoid committing generated output, audio recordings, or dependency directories unless explicitly requested.
-- Update this file when verified project structure, supported media behavior, or development commands change.
+- Review the existing code before editing.
+- Implement only the assigned task.
+- Do not complete intentionally unfinished learning exercises unless explicitly requested.
+- Avoid unrelated refactoring and dependency upgrades.
+- Report exact validation commands and results.
+- Do not merge pull requests.
