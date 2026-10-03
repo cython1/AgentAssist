@@ -34,3 +34,10 @@ This is a TypeScript Node.js real-time voice gateway.
 - Avoid unrelated refactoring and dependency upgrades.
 - Report exact validation commands and results.
 - Do not merge pull requests.
+
+## Branch policy
+
+- Normal development work starts from `develop`.
+- Maintenance pull requests must target `develop`.
+- Do not open maintenance pull requests against `main`.
+- `main` is reserved for release or production integration.
