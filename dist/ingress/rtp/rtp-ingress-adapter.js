@@ -2,7 +2,7 @@ import dgram from "node:dgram";
 import { writeFileSync } from "node:fs";
 import { parseRtpPacket } from "./rtp.js";
 function muLawToLinear(byte) {
-    const value = (~byte) & 0xff;
+    const value = ~byte & 0xff;
     const sign = value & 0x80;
     const exponent = (value >> 4) & 0x07;
     const mantissa = value & 0x0f;
@@ -10,6 +10,38 @@ function muLawToLinear(byte) {
     return sign ? 0x84 - sample : sample - 0x84;
 }
 const RTP_PORT = 20000;
+function closeSocket(socket) {
+    return new Promise((resolve, reject) => {
+        const cleanup = () => {
+            socket.off("close", onClose);
+            socket.off("error", onError);
+        };
+        const onClose = () => {
+            cleanup();
+            resolve();
+        };
+        const onError = (error) => {
+            cleanup();
+            reject(error);
+        };
+        socket.once("close", onClose);
+        socket.once("error", onError);
+        try {
+            socket.close();
+        }
+        catch (error) {
+            cleanup();
+            if (error instanceof Error &&
+                "code" in error &&
+                error.code === "ERR_SOCKET_DGRAM_NOT_RUNNING") {
+                resolve();
+            }
+            else {
+                reject(error);
+            }
+        }
+    });
+}
 // Store all decoded PCM samples
 const allPcmSamples = [];
 // Count received RTP packets
@@ -94,5 +126,65 @@ export function startRtpServer() {
         console.error("UDP server error:", error);
     });
     socket.bind(RTP_PORT);
+}
+export class rtpIngressAdapter {
+    handlers = new Set();
+    socket = undefined;
+    onAudio(handler) {
+        this.handlers.add(handler);
+        return () => {
+            this.handlers.delete(handler);
+        };
+    }
+    async start() {
+        if (this.socket !== undefined) {
+            throw new Error("RTP adapter is already started or starting");
+        }
+        const socket = dgram.createSocket("udp4");
+        this.socket = socket;
+        try {
+            await new Promise((resolve, reject) => {
+                const onListening = () => {
+                    const address = socket.address();
+                    console.log(`RTP server listening on ${address.address}:${address.port}`);
+                    resolve();
+                };
+                socket.once("listening", onListening);
+                socket.once("error", (error) => {
+                    console.error("UDP server error:", error);
+                    reject(error);
+                });
+                socket.bind(RTP_PORT);
+            });
+        }
+        catch (error) {
+            try {
+                await closeSocket(socket);
+            }
+            catch {
+                // Preserve the startup error.
+            }
+            finally {
+                if (this.socket === socket) {
+                    this.socket = undefined;
+                }
+            }
+            throw error;
+        }
+    }
+    async stop() {
+        const socket = this.socket;
+        if (socket === undefined) {
+            return;
+        }
+        try {
+            await closeSocket(socket);
+        }
+        finally {
+            if (this.socket === socket) {
+                this.socket = undefined;
+            }
+        }
+    }
 }
 //# sourceMappingURL=rtp-ingress-adapter.js.map

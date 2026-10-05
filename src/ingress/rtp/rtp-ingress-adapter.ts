@@ -19,6 +19,41 @@ function muLawToLinear(byte: number): number {
 
 const RTP_PORT = 20000;
 
+function closeSocket(socket: Socket): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = (): void => {
+      socket.off("close", onClose);
+      socket.off("error", onError);
+    };
+    const onClose = (): void => {
+      cleanup();
+      resolve();
+    };
+    const onError = (error: Error): void => {
+      cleanup();
+      reject(error);
+    };
+
+    socket.once("close", onClose);
+    socket.once("error", onError);
+
+    try {
+      socket.close();
+    } catch (error) {
+      cleanup();
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ERR_SOCKET_DGRAM_NOT_RUNNING"
+      ) {
+        resolve();
+      } else {
+        reject(error);
+      }
+    }
+  });
+}
+
 // Store all decoded PCM samples
 const allPcmSamples: number[] = [];
 
@@ -151,24 +186,48 @@ export class rtpIngressAdapter implements voiceIngressAdapter {
     }
     const socket = dgram.createSocket("udp4");
     this.socket = socket;
-    await new Promise<void>((resolve, reject) => {
-      const onListening = (): void => {
-        const address = socket.address();
-        console.log(
-          `RTP server listening on ${address.address}:${address.port}`,
-        );
-        resolve();
-      };
-      socket.once("listening", onListening);
-      socket.once("error", (error) => {
-        console.error("UDP server error:", error);
-        reject(error);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const onListening = (): void => {
+          const address = socket.address();
+          console.log(
+            `RTP server listening on ${address.address}:${address.port}`,
+          );
+          resolve();
+        };
+        socket.once("listening", onListening);
+        socket.once("error", (error) => {
+          console.error("UDP server error:", error);
+          reject(error);
+        });
+        socket.bind(RTP_PORT);
       });
-      socket.bind(RTP_PORT);
-    });
+    } catch (error) {
+      try {
+        await closeSocket(socket);
+      } catch {
+        // Preserve the startup error.
+      } finally {
+        if (this.socket === socket) {
+          this.socket = undefined;
+        }
+      }
+      throw error;
+    }
   }
 
   async stop(): Promise<void> {
-    throw new Error("stop() is not implemented yet");
+    const socket = this.socket;
+    if (socket === undefined) {
+      return;
+    }
+
+    try {
+      await closeSocket(socket);
+    } finally {
+      if (this.socket === socket) {
+        this.socket = undefined;
+      }
+    }
   }
 }
