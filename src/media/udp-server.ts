@@ -1,6 +1,6 @@
 import dgram from "node:dgram";
-import { parseRtpPacket } from "./rtp.js";
-import { muLawToLinear } from "./pcmu.js";
+import { parseRtpPacket } from "../ingress/rtp/rtp.js";
+import { muLawToLinear } from "./codecs/pcmu.js";
 import { writeWavFile } from "./way-writer.js";
 
 const RTP_PORT = 20000;
