@@ -6,6 +6,7 @@ import type {
   audioFrameHandler,
 } from "../voice-ingress-adapter.js";
 import type { Socket } from "node:dgram";
+import { ingressAudioFrame } from "../ingress-audio-frame.js";
 
 function muLawToLinear(byte: number): number {
   const value = ~byte & 0xff;
@@ -164,11 +165,46 @@ export class rtpIngressAdapter implements voiceIngressAdapter {
         console.error("UDP server error:", error);
         reject(error);
       });
+      socket.on("message", (packet, remote) => {
+        // Handle incoming udp messages here if needed
+        const rtp = parseRtpPacket(packet);
+        if (rtp.payloadType !== 0) {
+          console.log(
+            `Ignoring non-PCMU RTP packet from ${remote.address}:${remote.port}, payload type: ${rtp.payloadType}`,
+          );
+          return;
+        }
+        const frame: ingressAudioFrame = {
+          streamId: String(rtp.ssrc),
+          encoding: "PCMU",
+          sampleRate: 8000,
+          channels: 1,
+          data: rtp.payload,
+          timestamp: rtp.timestamp,
+          clockRate: 8000,
+        };
+        for (const handler of this.handlers) {
+          try {
+            handler(frame);
+          } catch (error) {
+            console.error("Error handling audio frame:", error);
+          }
+        }
+      });
       socket.bind(RTP_PORT);
     });
   }
 
   async stop(): Promise<void> {
-    throw new Error("stop() is not implemented yet");
+    const socket = this.socket;
+    if (socket === undefined) {
+      console.warn("RTP adapter is not started");
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      socket.once("close", resolve);
+      socket.close();
+    });
+    this.socket = undefined;
   }
 }
