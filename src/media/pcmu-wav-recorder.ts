@@ -1,4 +1,3 @@
-import { bytes } from "node:stream/consumers";
 import type { ingressAudioFrame } from "../ingress/ingress-audio-frame.js";
 import { muLawToLinear } from "./codecs/pcmu.js";
 import { writeWavFile } from "./way-writer.js";
@@ -21,7 +20,7 @@ export class PcmuWavRecorder {
     }
     if (this.frameCount >= 250 && !this.wavwritten) {
       writeWavFile(this.outputPath, this.allPCMSamples, 8000);
-	  this.wavwritten = true;
+      this.wavwritten = true;
       console.log(`total PCM Samples received: ${this.allPCMSamples.length}`);
     }
   }
